@@ -14,7 +14,9 @@ import {
   RotateCcw,
   CheckCircle,
   Clock,
-  Eye
+  Eye,
+  History,
+  Save
 } from "lucide-react";
 import InvoiceTemplate, { InvoiceData, InvoiceItem, COLOR_THEMES } from "./components/InvoiceTemplate";
 
@@ -29,6 +31,93 @@ const REMITTANCE_OPTIONS = {
 } as const;
 
 type PaymentMode = keyof typeof REMITTANCE_OPTIONS;
+type ActiveTab = "builder" | "history";
+
+interface InvoiceRecord extends InvoiceData {
+  recordId: string;
+  savedAt: string;
+  totalAmount: number;
+  itemCount: number;
+}
+
+const HISTORY_STORAGE_KEY = "medrozo-invoice-history";
+
+const calculateInvoiceTotal = (data: InvoiceData) => {
+  const subtotal = data.items.reduce((sum, item) => sum + item.quantity * item.rate, 0);
+  const discountAmount = subtotal * (data.discountRate / 100);
+  const taxAmount = (subtotal - discountAmount) * (data.taxRate / 100);
+
+  return subtotal - discountAmount + taxAmount;
+};
+
+const cloneInvoiceData = (data: InvoiceData): InvoiceData => ({
+  ...data,
+  items: data.items.map((item) => ({ ...item })),
+});
+
+const invoiceRecordToData = (record: InvoiceRecord): InvoiceData => ({
+  invoiceNumber: record.invoiceNumber,
+  issueDate: record.issueDate,
+  dueDate: record.dueDate,
+  clientName: record.clientName,
+  clientEmail: record.clientEmail,
+  clientPhone: record.clientPhone,
+  clientAddress: record.clientAddress,
+  items: record.items.map((item) => ({ ...item })),
+  taxRate: record.taxRate,
+  discountRate: record.discountRate,
+  currency: record.currency,
+  notes: record.notes,
+  paymentTerms: record.paymentTerms,
+  bankName: record.bankName,
+  accountName: record.accountName,
+  accountNumber: record.accountNumber,
+  swiftCode: record.swiftCode,
+  accentColor: record.accentColor,
+});
+
+const formatRecordDate = (value: string) => {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Unknown date";
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+};
+
+const formatMoney = (value: number, currency: string) => {
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+    }).format(value);
+  } catch {
+    return `${currency} ${value.toFixed(2)}`;
+  }
+};
+
+const loadInvoiceHistory = (): InvoiceRecord[] => {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const savedHistory = window.localStorage.getItem(HISTORY_STORAGE_KEY);
+
+    if (!savedHistory) {
+      return [];
+    }
+
+    const parsedHistory = JSON.parse(savedHistory) as InvoiceRecord[];
+    return Array.isArray(parsedHistory) ? parsedHistory : [];
+  } catch {
+    return [];
+  }
+};
 
 // Initial Empty/Default State
 const createEmptyInvoice = (): InvoiceData => {
@@ -94,6 +183,8 @@ const DEMO_INVOICE: InvoiceData = {
 
 export default function Home() {
   const [invoice, setInvoice] = useState<InvoiceData>(DEMO_INVOICE);
+  const [activeTab, setActiveTab] = useState<ActiveTab>("builder");
+  const [invoiceHistory, setInvoiceHistory] = useState<InvoiceRecord[]>(loadInvoiceHistory);
   const [toast, setToast] = useState<{ message: string; type: "success" | "info" } | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -109,6 +200,54 @@ export default function Home() {
     setTimeout(() => {
       setToast(null);
     }, 3000);
+  };
+
+  const persistHistory = (records: InvoiceRecord[]) => {
+    setInvoiceHistory(records);
+    window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(records));
+  };
+
+  const saveInvoiceRecord = (data: InvoiceData) => {
+    const savedAt = new Date().toISOString();
+    const existingRecord = invoiceHistory.find(
+      (record) => record.invoiceNumber === data.invoiceNumber
+    );
+    const record: InvoiceRecord = {
+      ...cloneInvoiceData(data),
+      invoiceNumber: data.invoiceNumber || `INV-${Date.now()}`,
+      recordId: existingRecord?.recordId ?? `record-${Date.now()}`,
+      savedAt,
+      totalAmount: calculateInvoiceTotal(data),
+      itemCount: data.items.length,
+    };
+    const records = [
+      record,
+      ...invoiceHistory.filter((item) => item.recordId !== record.recordId),
+    ].sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime());
+
+    persistHistory(records);
+  };
+
+  const handleSaveInvoice = () => {
+    saveInvoiceRecord(invoice);
+    showToast("Invoice recorded in history", "success");
+  };
+
+  const handlePrintInvoice = () => {
+    saveInvoiceRecord(invoice);
+    handlePrint();
+    showToast("Invoice recorded and ready to print", "success");
+  };
+
+  const handleLoadInvoiceRecord = (record: InvoiceRecord) => {
+    setInvoice(invoiceRecordToData(record));
+    setActiveTab("builder");
+    showToast(`Loaded ${record.invoiceNumber}`, "info");
+  };
+
+  const handleDeleteInvoiceRecord = (recordId: string) => {
+    persistHistory(invoiceHistory.filter((record) => record.recordId !== recordId));
+    showToast("Removed invoice history record", "info");
   };
 
   // Add Item to list
@@ -222,7 +361,30 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+            <div className="flex h-10 rounded-xl border border-slate-200 dark:border-slate-800 p-1">
+              {[
+                { key: "builder", label: "Builder", icon: FileText },
+                { key: "history", label: "History", icon: History },
+              ].map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.key;
+
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key as ActiveTab)}
+                    className={`flex items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-bold transition-colors ${isActive
+                      ? "bg-slate-950 text-white dark:bg-white dark:text-slate-950"
+                      : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                      }`}
+                  >
+                    <Icon size={14} />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
             <button
               onClick={handleLoadDemo}
               className="flex items-center justify-center gap-2 flex-1 sm:flex-initial h-10 px-4 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors"
@@ -239,7 +401,15 @@ export default function Home() {
             </button>
 
             <button
-              onClick={() => handlePrint()}
+              onClick={handleSaveInvoice}
+              className="flex items-center justify-center gap-2 flex-1 sm:flex-initial h-10 px-4 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors"
+            >
+              <Save size={14} className="text-emerald-500" />
+              Record
+            </button>
+
+            <button
+              onClick={handlePrintInvoice}
               className="flex items-center justify-center gap-2 flex-1 sm:flex-auto h-10 px-6 rounded-xl text-xs font-bold text-white shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/35 transition-all hover:scale-[1.02] active:scale-[0.98]"
               style={{
                 backgroundColor: COLOR_THEMES[invoice.accentColor]?.primary || "#4f46e5",
@@ -252,8 +422,102 @@ export default function Home() {
         </div>
       </header>
 
-      {/* CORE CONTENT GRID */}
-      <main className="max-w-7xl mx-auto w-full px-4 md:px-8 pt-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      {activeTab === "history" ? (
+        <main className="max-w-7xl mx-auto w-full px-4 md:px-8 pt-8 print:hidden">
+          <section className="bg-white dark:bg-[#0f172a] rounded-2xl premium-shadow border border-slate-100 dark:border-slate-800/55 overflow-hidden">
+            <div className="flex flex-col gap-1 border-b border-slate-100 dark:border-slate-800/60 p-6">
+              <div className="flex items-center gap-2">
+                <History size={18} className="text-indigo-500" />
+                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Past Invoices
+                </h2>
+              </div>
+              <p className="text-xs text-slate-400">
+                Records are saved on this browser so you can reload previous invoices anytime.
+              </p>
+            </div>
+
+            {invoiceHistory.length === 0 ? (
+              <div className="p-10 text-center">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-900">
+                  <FileText size={20} className="text-slate-400" />
+                </div>
+                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                  No invoice records yet
+                </h3>
+                <p className="mt-1 text-xs text-slate-400">
+                  Click Record or Print Invoice after creating an invoice.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[760px] text-left">
+                  <thead className="bg-slate-50 dark:bg-slate-900/40 text-[11px] uppercase tracking-wider text-slate-400">
+                    <tr>
+                      <th className="px-6 py-3 font-bold">Invoice</th>
+                      <th className="px-6 py-3 font-bold">Client</th>
+                      <th className="px-6 py-3 font-bold">Issue Date</th>
+                      <th className="px-6 py-3 text-right font-bold">Total</th>
+                      <th className="px-6 py-3 font-bold">Recorded</th>
+                      <th className="px-6 py-3 text-right font-bold">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70">
+                    {invoiceHistory.map((record) => (
+                      <tr key={record.recordId} className="text-sm">
+                        <td className="px-6 py-4">
+                          <div className="font-mono text-xs font-bold text-slate-900 dark:text-white">
+                            {record.invoiceNumber}
+                          </div>
+                          <div className="mt-1 text-[11px] text-slate-400">
+                            {record.itemCount} item{record.itemCount === 1 ? "" : "s"}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="font-semibold text-slate-700 dark:text-slate-200">
+                            {record.clientName || "Unnamed client"}
+                          </div>
+                          <div className="mt-1 text-[11px] text-slate-400">
+                            {record.clientEmail || record.clientPhone || "No contact details"}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-xs font-medium text-slate-500 dark:text-slate-400">
+                          {record.issueDate || "N/A"}
+                        </td>
+                        <td className="px-6 py-4 text-right font-mono text-xs font-bold text-slate-900 dark:text-white">
+                          {formatMoney(record.totalAmount, record.currency)}
+                        </td>
+                        <td className="px-6 py-4 text-xs text-slate-500 dark:text-slate-400">
+                          {formatRecordDate(record.savedAt)}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => handleLoadInvoiceRecord(record)}
+                              className="h-9 rounded-lg border border-slate-200 px-3 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-900/60"
+                            >
+                              Load
+                            </button>
+                            <button
+                              onClick={() => handleDeleteInvoiceRecord(record.recordId)}
+                              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition-colors hover:border-red-200 hover:text-red-500 dark:border-slate-800"
+                              title="Delete history record"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        </main>
+      ) : (
+        /* CORE CONTENT GRID */
+        <main className="max-w-7xl mx-auto w-full px-4 md:px-8 pt-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
         {/* CONTROL SIDEBAR (LEFT) */}
         <section className="lg:col-span-5 flex flex-col gap-6 print:hidden">
@@ -734,7 +998,8 @@ export default function Home() {
           </div>
         </section>
 
-      </main>
+        </main>
+      )}
     </div>
   );
 }
