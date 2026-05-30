@@ -1,6 +1,6 @@
 import React, { forwardRef } from "react";
 import Image from "next/image";
-import MedrozoLogo from "@/assets/logo.jpeg";
+import MedrozoLogo from "@/assets/logo2.jpg";
 
 export interface InvoiceItem {
   id: string;
@@ -121,11 +121,11 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(({ data
             <Image
               src={MedrozoLogo}
               alt="Medrozo Logo"
-              className="h-32 w-auto max-w-[260px] object-contain print:h-28"
+              className="h-32 w-auto max-w-[180px] object-contain print:h-30 "
               priority
             />
 
-            <div className="text-slate-500 space-y-1 mt-3 text-xs">
+            <div className="text-slate-500 space-y-1 mt-3 text-[10px]">
               <p className="font-semibold text-slate-700">Medrozo IT Solutions</p>
               <p>Barra  New Road Macabalan, Cagayan de Oro City</p>
               <p>Email: support@medrozonetworks.com</p>
@@ -143,7 +143,7 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(({ data
               INVOICE
             </h1>
 
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-slate-500">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm text-slate-500">
               <span className="font-semibold text-slate-700">Invoice Number:</span>
               <span className="font-mono text-slate-900 font-bold">{data.invoiceNumber || "N/A"}</span>
 
@@ -162,15 +162,15 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(({ data
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 my-8 print:my-4 print:gap-4 print:grid-cols-2">
           {/* Client Details */}
           <div className="p-5 rounded-lg border border-slate-100" style={{ backgroundColor: theme.bg }}>
-            <h3 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: theme.text }}>
+            <h3 className="text-base font-bold uppercase tracking-wider mb-2" style={{ color: theme.text }}>
               Billed To
             </h3>
             <div className="space-y-1 text-slate-700">
-              <p className="font-bold text-slate-900 text-base">{data.clientName || "Client Name"}</p>
+              <p className="font-bold text-slate-900 text-sm">{data.clientName || "Client Name"}</p>
               {data.clientEmail && <p className="text-xs text-slate-500">{data.clientEmail}</p>}
               {data.clientPhone && <p className="text-xs text-slate-500">{data.clientPhone}</p>}
               {data.clientAddress && (
-                <p className="text-xs mt-2 text-slate-600 whitespace-pre-line leading-relaxed">
+                <p className="text-[10px] mt-2 text-slate-600 whitespace-pre-line leading-relaxed">
                   {data.clientAddress}
                 </p>
               )}
@@ -180,10 +180,10 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(({ data
           {/* Payment Status / Overview */}
           <div className="flex flex-col justify-between p-5 rounded-lg border border-slate-100 bg-slate-50">
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+              <h3 className="text-base font-bold uppercase tracking-wider text-slate-500 mb-2">
                 Payment Information
               </h3>
-              <div className="space-y-1 text-xs text-slate-600">
+              <div className="space-y-1 text-sm text-slate-600">
                 <p><span className="font-semibold text-slate-800">Method:</span> {data.bankName || "N/A"}</p>
                 <p><span className="font-semibold text-slate-800">Currency:</span> {data.currency}</p>
               </div>
