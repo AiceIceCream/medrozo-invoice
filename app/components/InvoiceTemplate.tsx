@@ -159,14 +159,14 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(({ data
         </div>
 
         {/* BILLING AND CLIENT DETAILS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 my-8 print:my-4 print:gap-4 print:grid-cols-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 my-1 print:my-2 print:gap-4 print:grid-cols-2">
           {/* Client Details */}
           <div className="p-5 rounded-lg border border-slate-100" style={{ backgroundColor: theme.bg }}>
-            <h3 className="text-base font-bold uppercase tracking-wider mb-2" style={{ color: theme.text }}>
+            <h3 className="text-[12px] font-bold uppercase tracking-wider mb-1" style={{ color: theme.text }}>
               Billed To
             </h3>
             <div className="space-y-1 text-slate-700">
-              <p className="font-bold text-slate-900 text-sm">{data.clientName || "Client Name"}</p>
+              <p className="font-bold text-slate-900 text-[14px]">{data.clientName || "Client Name"}</p>
               {data.clientEmail && <p className="text-xs text-slate-500">{data.clientEmail}</p>}
               {data.clientPhone && <p className="text-xs text-slate-500">{data.clientPhone}</p>}
               {data.clientAddress && (
@@ -180,10 +180,10 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(({ data
           {/* Payment Status / Overview */}
           <div className="flex flex-col justify-between p-5 rounded-lg border border-slate-100 bg-slate-50">
             <div>
-              <h3 className="text-base font-bold uppercase tracking-wider text-slate-500 mb-2">
+              <h3 className="text-[12px] font-bold uppercase tracking-wider text-slate-500 mb-1">
                 Payment Information
               </h3>
-              <div className="space-y-1 text-sm text-slate-600">
+              <div className="space-y-1 text-[14px] text-slate-600">
                 <p><span className="font-semibold text-slate-800">Method:</span> {data.bankName || "N/A"}</p>
                 <p><span className="font-semibold text-slate-800">Currency:</span> {data.currency}</p>
               </div>
@@ -205,32 +205,32 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(({ data
                 className="border-b text-xs uppercase font-semibold tracking-wider text-slate-600"
                 style={{ borderBottomColor: theme.border }}
               >
-                <th className="py-3 px-2 text-slate-500">Service / Item Description</th>
-                <th className="py-3 px-2 text-center text-slate-500 w-20">Qty</th>
-                <th className="py-3 px-2 text-right text-slate-500 w-32">Rate</th>
-                <th className="py-3 px-2 text-right text-slate-500 w-36">Amount</th>
+                <th className="py-1 px-1 text-slate-500">Service / Item Description</th>
+                <th className="py-1 px-1 text-center text-slate-500 w-20">Qty</th>
+                <th className="py-1 px-1 text-right text-slate-500 w-32">Rate</th>
+                <th className="py-1 px-1 text-right text-slate-500 w-36">Amount</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-sm">
+            <tbody className="divide-y divide-slate-100 text-[12px]">
               {data.items.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="py-8 text-center text-slate-400 italic">
+                  <td colSpan={4} className="py-1 text-center text-slate-400 italic">
                     No items added yet. Complete the form to populate table.
                   </td>
                 </tr>
               ) : (
                 data.items.map((item) => (
                   <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="py-4 px-2 font-medium text-slate-900 leading-snug">
+                    <td className="py-1 px-1 font-medium text-slate-900 leading-snug">
                       {item.description || <span className="text-slate-300 italic">No description</span>}
                     </td>
-                    <td className="py-4 px-2 text-center font-mono text-slate-600">
+                    <td className="py-1 px-1 text-center font-mono text-slate-600">
                       {item.quantity}
                     </td>
-                    <td className="py-4 px-2 text-right font-mono text-slate-600">
+                    <td className="py-1 px-1 text-right font-mono text-slate-600">
                       {formatCurrency(item.rate, data.currency)}
                     </td>
-                    <td className="py-4 px-2 text-right font-mono font-semibold text-slate-900">
+                    <td className="py-1 px-1 text-right font-mono font-semibold text-slate-900">
                       {formatCurrency(item.quantity * item.rate, data.currency)}
                     </td>
                   </tr>
@@ -241,7 +241,7 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(({ data
         </div>
 
         {/* SUMMARY SECTION */}
-        <div className="mt-10 print:mt-6 grid grid-cols-1 md:grid-cols-2 gap-8 print:gap-4 pt-8 print:pt-4 border-t border-slate-100 print:grid-cols-2 print-no-break">
+        <div className="mt-10 print:mt-6 grid grid-cols-1 md:grid-cols-2 gap-2 print:gap-2 pt-8 print:pt-4 border-t border-slate-100 print:grid-cols-2 print-no-break">
           {/* Notes & Bank Details */}
           <div className="space-y-6">
             {/* Bank details */}
@@ -269,23 +269,16 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(({ data
                       <span className="col-span-2 font-mono">{data.accountNumber}</span>
                     </>
                   )}
-                  {/* {data.swiftCode && (
-                    <>
-                      <span className="font-semibold text-slate-700">SWIFT / BIC:</span>
-                      <span className="col-span-2 font-mono uppercase">{data.swiftCode}</span>
-                    </>
-                  )} */}
                 </div>
               </div>
             )}
-
             {/* Notes & Terms */}
             {data.notes && (
               <div>
                 <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                   Notes
                 </h4>
-                <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line">
+                <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line text-justify">
                   {data.notes}
                 </p>
               </div>
@@ -296,13 +289,12 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(({ data
                 <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                   Terms & Conditions
                 </h4>
-                <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line">
+                <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line text-justify">
                   {data.paymentTerms}
                 </p>
               </div>
             )}
           </div>
-
           {/* Subtotal & Calculations */}
           <div className="flex flex-col justify-start md:items-end text-left md:text-right print:items-end print:text-right">
             <div className="w-full max-w-xs space-y-2.5 text-sm">
@@ -312,7 +304,6 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(({ data
                   {formatCurrency(subtotal, data.currency)}
                 </span>
               </div>
-
               {data.discountRate > 0 && (
                 <div className="flex justify-between text-emerald-600 bg-emerald-50/50 py-1 px-1.5 rounded">
                   <span>Discount ({data.discountRate}%):</span>
@@ -348,7 +339,7 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(({ data
       {/* FOOTER SECTION */}
       <div className="mt-16 print:mt-8 pt-8 print:pt-4 border-t border-slate-100 text-center text-xs text-slate-400 space-y-1.5 print-no-break">
         <p className="font-semibold text-slate-600">
-          Thank you for choosing Medrozo IT Solutions as your technology partner!
+          Thank you for choosing Medrozo IT Solutions!
         </p>
         {/* <p>If you have any questions regarding this invoice, please contact finance@medrozo.com</p> */}
         {/* <p className="text-[10px] text-slate-300 mt-2 font-mono">
