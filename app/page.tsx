@@ -16,19 +16,16 @@ import {
   Clock,
   Eye,
   History,
+  Minus,
   Save
 } from "lucide-react";
-import InvoiceTemplate, { InvoiceData, InvoiceItem, COLOR_THEMES } from "./components/InvoiceTemplate";
-
-const REMITTANCE_OPTIONS = {
-  GCASH: [
-    { accountName: "Bryan M.", accountNumber: "0997-255-550" },
-    { accountName: "Rubelyn M.", accountNumber: "0995-499-0899" },
-  ],
-  "UNION BANK": [
-    { accountName: "MEDROZO IT SOLUTIONS", accountNumber: "0012 0003 6168" },
-  ],
-} as const;
+import InvoiceTemplate, {
+  InvoiceData,
+  InvoiceItem,
+  COLOR_THEMES,
+  REMITTANCE_OPTIONS,
+  getLineItemAmount,
+} from "./components/InvoiceTemplate";
 
 type PaymentMode = keyof typeof REMITTANCE_OPTIONS;
 type ActiveTab = "builder" | "history";
@@ -43,7 +40,7 @@ interface InvoiceRecord extends InvoiceData {
 const HISTORY_STORAGE_KEY = "medrozo-invoice-history";
 
 const calculateInvoiceTotal = (data: InvoiceData) => {
-  const subtotal = data.items.reduce((sum, item) => sum + item.quantity * item.rate, 0);
+  const subtotal = data.items.reduce((sum, item) => sum + getLineItemAmount(item), 0);
   const discountAmount = subtotal * (data.discountRate / 100);
   const taxAmount = (subtotal - discountAmount) * (data.taxRate / 100);
 
@@ -52,7 +49,7 @@ const calculateInvoiceTotal = (data: InvoiceData) => {
 
 const cloneInvoiceData = (data: InvoiceData): InvoiceData => ({
   ...data,
-  items: data.items.map((item) => ({ ...item })),
+  items: data.items.map((item) => ({ ...item, lineType: item.lineType ?? "charge" })),
 });
 
 const invoiceRecordToData = (record: InvoiceRecord): InvoiceData => ({
@@ -63,7 +60,7 @@ const invoiceRecordToData = (record: InvoiceRecord): InvoiceData => ({
   clientEmail: record.clientEmail,
   clientPhone: record.clientPhone,
   clientAddress: record.clientAddress,
-  items: record.items.map((item) => ({ ...item })),
+  items: record.items.map((item) => ({ ...item, lineType: item.lineType ?? "charge" })),
   taxRate: record.taxRate,
   discountRate: record.discountRate,
   currency: record.currency,
@@ -74,6 +71,9 @@ const invoiceRecordToData = (record: InvoiceRecord): InvoiceData => ({
   accountNumber: record.accountNumber,
   swiftCode: record.swiftCode,
   accentColor: record.accentColor,
+  preparedByName: record.preparedByName ?? "",
+  preparedByPosition: record.preparedByPosition ?? "",
+  preparedByContact: record.preparedByContact ?? "",
 });
 
 const formatRecordDate = (value: string) => {
@@ -145,6 +145,9 @@ const createEmptyInvoice = (): InvoiceData => {
     accountNumber: "0012 0003 6168",
     swiftCode: "",
     accentColor: "indigo",
+    preparedByName: "",
+    preparedByPosition: "",
+    preparedByContact: "",
   };
 };
 
@@ -167,6 +170,7 @@ const DEMO_INVOICE: InvoiceData = {
       description: "Enterprise Cloud Architecture Consulting (Phase 1 Strategy)",
       quantity: 1,
       rate: 4500,
+      lineType: "charge",
     },
   ],
   taxRate: 12,
@@ -179,6 +183,9 @@ const DEMO_INVOICE: InvoiceData = {
   accountNumber: "0012 0003 6168",
   swiftCode: "",
   accentColor: "indigo",
+  preparedByName: "Blanche R.",
+  preparedByPosition: "Authorized Representative",
+  preparedByContact: "+63 977-2555-500",
 };
 
 export default function Home() {
@@ -251,18 +258,19 @@ export default function Home() {
   };
 
   // Add Item to list
-  const handleAddItem = () => {
+  const handleAddItem = (lineType: InvoiceItem["lineType"] = "charge") => {
     const newItem: InvoiceItem = {
       id: `item-${Date.now()}`,
       description: "",
       quantity: 1,
       rate: 0,
+      lineType,
     };
     setInvoice((prev) => ({
       ...prev,
       items: [...prev.items, newItem],
     }));
-    showToast("Added new service item", "info");
+    showToast(lineType === "deduction" ? "Added deduction item" : "Added new service item", "info");
   };
 
   // Delete Item from list
@@ -712,23 +720,32 @@ export default function Home() {
 
           {/* Line Items Editor Card */}
           <div className="bg-white dark:bg-[#0f172a] rounded-2xl p-6 premium-shadow border border-slate-100 dark:border-slate-800/55 transition-colors">
-            <div className="flex justify-between items-center mb-4 border-b border-slate-100 dark:border-slate-800/60 pb-3">
+            <div className="flex flex-wrap justify-between items-center gap-3 mb-4 border-b border-slate-100 dark:border-slate-800/60 pb-3">
               <div className="flex items-center gap-2">
                 <h1 className="text-slate-400">₱</h1>
                 <h2 className="text-sm font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
                   Service Line Items
                 </h2>
               </div>
-              <button
-                onClick={handleAddItem}
-                className="flex items-center gap-1 text-[11px] font-bold text-white px-3 py-1.5 rounded-lg transition-transform hover:scale-105 active:scale-95 shadow-md shadow-slate-900/10"
-                style={{
-                  backgroundColor: COLOR_THEMES[invoice.accentColor]?.primary || "#4f46e5",
-                }}
-              >
-                <Plus size={12} />
-                Add Item
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => handleAddItem("charge")}
+                  className="flex items-center gap-1 text-[11px] font-bold text-white px-3 py-1.5 rounded-lg transition-transform hover:scale-105 active:scale-95 shadow-md shadow-slate-900/10"
+                  style={{
+                    backgroundColor: COLOR_THEMES[invoice.accentColor]?.primary || "#4f46e5",
+                  }}
+                >
+                  <Plus size={12} />
+                  Add Item
+                </button>
+                <button
+                  onClick={() => handleAddItem("deduction")}
+                  className="flex items-center gap-1 rounded-lg border border-rose-200 px-3 py-1.5 text-[11px] font-bold text-rose-600 transition-colors hover:bg-rose-50 dark:border-rose-900/60 dark:hover:bg-rose-950/20"
+                >
+                  <Minus size={12} />
+                  Add Deduction
+                </button>
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -738,22 +755,56 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="space-y-4 max-h-[350px] overflow-y-auto pr-1">
-                  {invoice.items.map((item, idx) => (
-                    <div
-                      key={item.id}
-                      className="p-4 rounded-xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/30 flex flex-col gap-3 relative group"
-                    >
-                      {/* Delete icon */}
-                      <button
-                        onClick={() => handleDeleteItem(item.id)}
-                        className="absolute top-2.5 right-2.5 text-slate-400 hover:text-red-500 transition-colors p-1"
-                        title="Delete Row"
-                      >
-                        <Trash2 size={13} />
-                      </button>
+                  {invoice.items.map((item, idx) => {
+                    const isDeduction = item.lineType === "deduction";
+                    const lineAmount = getLineItemAmount(item);
 
-                      <div className="text-[10px] font-bold text-slate-400 uppercase">
-                        Item #{idx + 1}
+                    return (
+                      <div
+                        key={item.id}
+                        className={`p-4 rounded-xl border dark:border-slate-800/80 flex flex-col gap-3 relative group ${isDeduction
+                          ? "border-rose-100 bg-rose-50/40 dark:bg-rose-950/10"
+                          : "border-slate-100 bg-slate-50/50 dark:bg-slate-900/30"
+                          }`}
+                      >
+                        {/* Delete icon */}
+                        <button
+                          onClick={() => handleDeleteItem(item.id)}
+                          className="absolute top-2.5 right-2.5 text-slate-400 hover:text-red-500 transition-colors p-1"
+                          title="Delete Row"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+
+                      <div className="flex items-center justify-between pr-8">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase">
+                          Item #{idx + 1}
+                        </div>
+                        <div className="flex h-8 rounded-lg border border-slate-200 bg-white p-1 dark:border-slate-800 dark:bg-slate-950/30">
+                          {[
+                            { value: "charge", label: "Add", icon: Plus },
+                            { value: "deduction", label: "Minus", icon: Minus },
+                          ].map((mode) => {
+                            const ModeIcon = mode.icon;
+                            const isActive = (item.lineType ?? "charge") === mode.value;
+
+                            return (
+                              <button
+                                key={mode.value}
+                                onClick={() => handleEditItem(item.id, "lineType", mode.value)}
+                                className={`flex items-center gap-1 rounded-md px-2 text-[10px] font-bold transition-colors ${isActive
+                                  ? mode.value === "deduction"
+                                    ? "bg-rose-600 text-white"
+                                    : "bg-slate-950 text-white dark:bg-white dark:text-slate-950"
+                                  : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                                  }`}
+                              >
+                                <ModeIcon size={11} />
+                                {mode.label}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
 
                       {/* Description */}
@@ -804,12 +855,13 @@ export default function Home() {
                             Total
                           </label>
                           <div className="h-8 leading-8 text-right text-xs font-mono font-bold text-slate-700 dark:text-slate-300 pr-1">
-                            {(item.quantity * item.rate).toFixed(2)}
+                            {lineAmount.toFixed(2)}
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
@@ -965,6 +1017,45 @@ export default function Home() {
                   onChange={(e) => setInvoice((prev) => ({ ...prev, paymentTerms: e.target.value }))}
                   className="w-full p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-transparent text-xs resize-none"
                 />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-slate-100 dark:border-slate-800/60 pt-4">
+                <div>
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">
+                    Invoice Maker Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Name"
+                    value={invoice.preparedByName}
+                    onChange={(e) => setInvoice((prev) => ({ ...prev, preparedByName: e.target.value }))}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-transparent text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">
+                    Position
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Position / title"
+                    value={invoice.preparedByPosition}
+                    onChange={(e) => setInvoice((prev) => ({ ...prev, preparedByPosition: e.target.value }))}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-transparent text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">
+                    Contact Number
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="+63..."
+                    value={invoice.preparedByContact}
+                    onChange={(e) => setInvoice((prev) => ({ ...prev, preparedByContact: e.target.value }))}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-transparent text-xs font-mono"
+                  />
+                </div>
               </div>
             </div>
           </div>

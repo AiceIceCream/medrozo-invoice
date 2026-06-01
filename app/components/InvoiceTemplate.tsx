@@ -2,11 +2,22 @@ import React, { forwardRef } from "react";
 import Image from "next/image";
 import MedrozoLogo from "@/assets/logo2.jpg";
 
+export const REMITTANCE_OPTIONS = {
+  GCASH: [
+    { accountName: "Bryan M.", accountNumber: "0997-255-550" },
+    { accountName: "Rubelyn M.", accountNumber: "0995-499-0899" },
+  ],
+  "UNION BANK": [
+    { accountName: "MEDROZO IT SOLUTIONS", accountNumber: "0012 0003 6168" },
+  ],
+} as const;
+
 export interface InvoiceItem {
   id: string;
   description: string;
   quantity: number;
   rate: number;
+  lineType?: "charge" | "deduction";
 }
 
 export interface InvoiceData {
@@ -28,6 +39,9 @@ export interface InvoiceData {
   accountNumber: string;
   swiftCode: string;
   accentColor: string;
+  preparedByName: string;
+  preparedByPosition: string;
+  preparedByContact: string;
 }
 
 interface InvoiceTemplateProps {
@@ -85,11 +99,17 @@ export const formatCurrency = (value: number, currency: string) => {
   }
 };
 
+export const getLineItemAmount = (item: InvoiceItem) => {
+  const amount = item.quantity * item.rate;
+
+  return item.lineType === "deduction" ? -amount : amount;
+};
+
 const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(({ data }, ref) => {
   const theme = COLOR_THEMES[data.accentColor] || COLOR_THEMES.indigo;
 
   // Invoice calculations
-  const subtotal = data.items.reduce((sum, item) => sum + (item.quantity * item.rate), 0);
+  const subtotal = data.items.reduce((sum, item) => sum + getLineItemAmount(item), 0);
   const discountAmount = subtotal * (data.discountRate / 100);
   const taxAmount = (subtotal - discountAmount) * (data.taxRate / 100);
   const totalAmount = subtotal - discountAmount + taxAmount;
@@ -219,22 +239,36 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(({ data
                   </td>
                 </tr>
               ) : (
-                data.items.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="py-1 px-1 font-medium text-slate-900 leading-snug">
-                      {item.description || <span className="text-slate-300 italic">No description</span>}
-                    </td>
-                    <td className="py-1 px-1 text-center font-mono text-slate-600">
-                      {item.quantity}
-                    </td>
-                    <td className="py-1 px-1 text-right font-mono text-slate-600">
-                      {formatCurrency(item.rate, data.currency)}
-                    </td>
-                    <td className="py-1 px-1 text-right font-mono font-semibold text-slate-900">
-                      {formatCurrency(item.quantity * item.rate, data.currency)}
-                    </td>
-                  </tr>
-                ))
+                data.items.map((item) => {
+                  const lineAmount = getLineItemAmount(item);
+                  const isDeduction = item.lineType === "deduction";
+
+                  return (
+                    <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="py-1 px-1 font-medium text-slate-900 leading-snug">
+                        <div className="flex items-center gap-2">
+                          {isDeduction && (
+                            <span className="rounded bg-rose-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-rose-600">
+                              Deduct
+                            </span>
+                          )}
+                          <span>
+                            {item.description || <span className="text-slate-300 italic">No description</span>}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-1 px-1 text-center font-mono text-slate-600">
+                        {item.quantity}
+                      </td>
+                      <td className="py-1 px-1 text-right font-mono text-slate-600">
+                        {formatCurrency(item.rate, data.currency)}
+                      </td>
+                      <td className={`py-1 px-1 text-right font-mono font-semibold ${isDeduction ? "text-rose-600" : "text-slate-900"}`}>
+                        {formatCurrency(lineAmount, data.currency)}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -244,34 +278,36 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(({ data
         <div className="mt-10 print:mt-6 grid grid-cols-1 md:grid-cols-2 gap-2 print:gap-2 pt-8 print:pt-4 border-t border-slate-100 print:grid-cols-2 print-no-break">
           {/* Notes & Bank Details */}
           <div className="space-y-6">
-            {/* Bank details */}
-            {(data.bankName || data.accountNumber) && (
-              <div className="p-4 rounded-lg bg-slate-50/70 border border-slate-100 text-xs">
-                <h4 className="font-bold text-slate-800 uppercase tracking-wider mb-2">
-                  Direct Remittance Details
-                </h4>
-                <div className="grid grid-cols-3 gap-y-1 text-slate-600">
-                  {data.bankName && (
-                    <>
-                      <span className="font-semibold text-slate-700">Mode:</span>
-                      <span className="col-span-2">{data.bankName}</span>
-                    </>
-                  )}
-                  {data.accountName && (
-                    <>
-                      <span className="font-semibold text-slate-700">Account Name:</span>
-                      <span className="col-span-2">{data.accountName}</span>
-                    </>
-                  )}
-                  {data.accountNumber && (
-                    <>
-                      <span className="font-semibold text-slate-700">Account No:</span>
-                      <span className="col-span-2 font-mono">{data.accountNumber}</span>
-                    </>
-                  )}
-                </div>
+            <div className="p-4 rounded-lg bg-slate-50/70 border border-slate-100 text-xs">
+              <h4 className="font-bold text-slate-800 uppercase tracking-wider mb-2">
+                Direct Remittance Details
+              </h4>
+              <div className="space-y-2 text-slate-600">
+                {Object.entries(REMITTANCE_OPTIONS).map(([mode, accounts]) => (
+                  <div
+                    key={mode}
+                    className="border-t border-slate-200/70 pt-2 first:border-t-0 first:pt-0"
+                  >
+                    <div className="mb-1 font-bold uppercase tracking-wide text-slate-700">
+                      {mode}
+                    </div>
+                    <div className="space-y-1">
+                      {accounts.map((account) => (
+                        <div
+                          key={account.accountNumber}
+                          className="grid grid-cols-3 gap-y-0.5 rounded-md bg-white/70 p-2"
+                        >
+                          <span className="font-semibold text-slate-700">Account Name:</span>
+                          <span className="col-span-2">{account.accountName}</span>
+                          <span className="font-semibold text-slate-700">Account No:</span>
+                          <span className="col-span-2 font-mono">{account.accountNumber}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
             {/* Notes & Terms */}
             {data.notes && (
               <div>
@@ -335,6 +371,24 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(({ data
           </div>
         </div>
       </div>
+
+      {(data.preparedByName || data.preparedByPosition || data.preparedByContact) && (
+        <div className="mt-16 print:mt-10 flex justify-end print-no-break">
+          <div className="w-full max-w-xs text-center">
+            <div className="border-t border-slate-300 pt-2">
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-800">
+                {data.preparedByName || "Name"}
+              </p>
+              <p className="text-[10px] font-medium uppercase tracking-wide text-slate-500">
+                {data.preparedByPosition || "Position"}
+              </p>
+              <p className="text-[10px] font-mono text-slate-500">
+                {data.preparedByContact || "Contact number"}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* FOOTER SECTION */}
       <div className="mt-16 print:mt-8 pt-8 print:pt-4 border-t border-slate-100 text-center text-xs text-slate-400 space-y-1.5 print-no-break">
