@@ -308,8 +308,9 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(({ data
                 ))}
               </div>
             </div>
+            
             {/* Notes & Terms */}
-            {data.notes && (
+            {/* {data.notes && (
               <div>
                 <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                   Notes
@@ -329,7 +330,7 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(({ data
                   {data.paymentTerms}
                 </p>
               </div>
-            )}
+            )} */}
           </div>
           {/* Subtotal & Calculations */}
           <div className="flex flex-col justify-start md:items-end text-left md:text-right print:items-end print:text-right">
@@ -357,6 +358,7 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(({ data
                   </span>
                 </div>
               )}
+              
 
               <div
                 className="flex justify-between text-base font-bold pt-3.5 border-t border-slate-200"
@@ -367,38 +369,58 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(({ data
                   {formatCurrency(totalAmount, data.currency)}
                 </span>
               </div>
+
+                {data.notes && (
+              <div>
+                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 text-justify">
+                  Notes
+                </h4>
+                <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line text-justify">
+                  {data.notes}
+                </p>
+              </div>
+            )}
+
+            {data.paymentTerms && (
+              <div>
+                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 text-justify">
+                  Terms & Conditions
+                </h4>
+                <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line text-justify">
+                  {data.paymentTerms}
+                </p>
+              </div>
+            )}
+            
             </div>
           </div>
         </div>
       </div>
 
-      {(data.preparedByName || data.preparedByPosition || data.preparedByContact) && (
-        <div className="mt-16 print:mt-10 flex justify-end print-no-break">
-          <div className="w-full max-w-xs text-center">
-            <div className="border-t border-slate-300 pt-2">
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-800">
-                {data.preparedByName || "Name"}
-              </p>
-              <p className="text-[10px] font-medium uppercase tracking-wide text-slate-500">
-                {data.preparedByPosition || "Position"}
-              </p>
-              <p className="text-[10px] font-mono text-slate-500">
-                {data.preparedByContact || "Contact number"}
-              </p>
+        {(data.preparedByName || data.preparedByPosition || data.preparedByContact) && (
+          <div className="mt-16 print:mt-10 flex justify-start print-no-break">
+            <div className="w-full max-w-xs text-start">
+              {/* Removed border-t, border-slate-300, and pt-2 */}
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-800">
+                  {data.preparedByName || "Name"}
+                </p>
+                <p className="text-[10px] font-medium uppercase tracking-wide text-slate-500">
+                  {data.preparedByPosition || "Position"}
+                </p>
+                <p className="text-[10px] font-mono text-slate-500">
+                  {data.preparedByContact || "Contact number"}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* FOOTER SECTION */}
       <div className="mt-16 print:mt-8 pt-8 print:pt-4 border-t border-slate-100 text-center text-xs text-slate-400 space-y-1.5 print-no-break">
         <p className="font-semibold text-slate-600">
           Thank you for choosing Medrozo IT Solutions!
         </p>
-        {/* <p>If you have any questions regarding this invoice, please contact finance@medrozo.com</p> */}
-        {/* <p className="text-[10px] text-slate-300 mt-2 font-mono">
-          Generated automatically by Medrozo Live Invoice Builder on {new Date().toLocaleDateString("en-US")}
-        </p> */}
       </div>
     </div>
   );
