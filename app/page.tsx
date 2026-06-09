@@ -162,10 +162,10 @@ const DEMO_INVOICE: InvoiceData = {
     d.setDate(d.getDate() + 30);
     return d.toISOString().split("T")[0];
   })(),
-  clientName: "Acme Cybernetics Corp",
-  clientTin: "425-190-092-00000",
+  clientName: "Cybernetics Corp",
+  clientTin: "0000000000",
   clientEmail: "billing@acmecyber.com",
-  clientPhone: "+1 (415) 802-9912",
+  clientPhone: "+63 938 3421 325",
   clientAddress: "Building 12, Innovation Center\n4000 Tech Highway\nSilicon Valley, CA 94025",
   items: [
     {
