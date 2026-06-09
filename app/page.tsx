@@ -57,6 +57,7 @@ const invoiceRecordToData = (record: InvoiceRecord): InvoiceData => ({
   issueDate: record.issueDate,
   dueDate: record.dueDate,
   clientName: record.clientName,
+  clientTin: record.clientTin ?? "",
   clientEmail: record.clientEmail,
   clientPhone: record.clientPhone,
   clientAddress: record.clientAddress,
@@ -131,6 +132,7 @@ const createEmptyInvoice = (): InvoiceData => {
     issueDate: today,
     dueDate: dueDateStr,
     clientName: "",
+    clientTin: "",
     clientEmail: "",
     clientPhone: "",
     clientAddress: "",
@@ -161,6 +163,7 @@ const DEMO_INVOICE: InvoiceData = {
     return d.toISOString().split("T")[0];
   })(),
   clientName: "Acme Cybernetics Corp",
+  clientTin: "425-190-092-00000",
   clientEmail: "billing@acmecyber.com",
   clientPhone: "+1 (415) 802-9912",
   clientAddress: "Building 12, Innovation Center\n4000 Tech Highway\nSilicon Valley, CA 94025",
@@ -625,6 +628,19 @@ export default function Home() {
                   value={invoice.clientName}
                   onChange={(e) => setInvoice((prev) => ({ ...prev, clientName: e.target.value }))}
                   className="w-full h-10 px-3.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">
+                  TIN
+                </label>
+                <input
+                  type="text"
+                  placeholder="425-190-092-00000"
+                  value={invoice.clientTin}
+                  onChange={(e) => setInvoice((prev) => ({ ...prev, clientTin: e.target.value }))}
+                  className="w-full h-10 px-3.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all font-mono text-xs"
                 />
               </div>
 

@@ -25,6 +25,7 @@ export interface InvoiceData {
   issueDate: string;
   dueDate: string;
   clientName: string;
+  clientTin: string;
   clientEmail: string;
   clientPhone: string;
   clientAddress: string;
@@ -147,6 +148,7 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(({ data
 
             <div className="text-slate-500 space-y-1 mt-3 text-[10px]">
               <p className="font-semibold text-slate-700">Medrozo IT Solutions</p>
+              <p>TIN: 425-190-092-00000</p>
               <p>Barra  New Road Macabalan, Cagayan de Oro City</p>
               <p>Email: support@medrozonetworks.com</p>
               <p>Phone: +63 977-2555-500</p>
@@ -187,6 +189,7 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(({ data
             </h3>
             <div className="space-y-1 text-slate-700">
               <p className="font-bold text-slate-900 text-[14px]">{data.clientName || "Client Name"}</p>
+              {data.clientTin && <p className="text-xs text-slate-500">TIN: {data.clientTin}</p>}
               {data.clientEmail && <p className="text-xs text-slate-500">{data.clientEmail}</p>}
               {data.clientPhone && <p className="text-xs text-slate-500">{data.clientPhone}</p>}
               {data.clientAddress && (
@@ -308,29 +311,6 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(({ data
                 ))}
               </div>
             </div>
-            
-            {/* Notes & Terms */}
-            {/* {data.notes && (
-              <div>
-                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                  Notes
-                </h4>
-                <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line text-justify">
-                  {data.notes}
-                </p>
-              </div>
-            )}
-
-            {data.paymentTerms && (
-              <div>
-                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                  Terms & Conditions
-                </h4>
-                <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line text-justify">
-                  {data.paymentTerms}
-                </p>
-              </div>
-            )} */}
           </div>
           {/* Subtotal & Calculations */}
           <div className="flex flex-col justify-start md:items-end text-left md:text-right print:items-end print:text-right">
